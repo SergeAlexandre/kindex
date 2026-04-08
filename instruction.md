@@ -26,3 +26,52 @@ The links will open in a new tab.
 Link displayed in alphabetical order of the display link.
 
 Keep things as simple as possible. 
+
+------
+
+I have added a --kubeconfig option and set the serve command to NoArg.
+
+Modify the code to find k8s configuration the following way:
+- If --kubeconfig option is set, use it.
+- if not, if there is a KUBECONFIG environment variable KUBECONFIG, use it
+- if not lookup in the user configuration (~/.kube/config)
+
+------
+
+Got kubeconfig: invalid configuration: no configuration has been provided, try setting KUBERNETES_MASTER environment variable
+Seems ~/.kube/config is not taken in account
+
+
+----
+Which ingress use the "ingress.kubernetes.io/ssl-passthrough" annotation ?
+
+-----
+I was wondering if you know an existing controller which use the annotation
+---
+The link you provided about HAProxy give Page Not Found
+From HAProxy doc (https://www.haproxy.com/documentation/kubernetes-ingress/community/configuration-reference/ingress/#ssl-passthrough), the annotation is haproxy.org/ssl-passthrough: "true"
+
+-----
+
+    You're right, sorry about the broken link. And thanks for the correction on the official HAProxy controller — it uses haproxy.org/ssl-passthrough, not ingress.kubernetes.io/ssl-passthrough.
+    
+    To be precise, there are actually two distinct HAProxy-based ingress controllers:
+    
+    HAProxy Kubernetes Ingress Controller (official, by HAProxy Technologies, at haproxy.com) — uses haproxy.org/ prefix. So: haproxy.org/ssl-passthrough: "true".
+    
+    HAProxy Ingress (community, by jcmoraisjr/haproxy-ingress) — uses haproxy-ingress.github.io/ by default, and documents ingress.kubernetes.io/ as a backward-compatible prefix. This is the one I was referring to earlier.
+    
+    So to answer honestly: ingress.kubernetes.io/ssl-passthrough is only supported by the community HAProxy Ingress project for backward compatibility — it's not a widely used key. No mainstream, actively maintained controller uses it as a primary or default annotation.
+    
+    Bottom line: the ingress.kubernetes.io/ssl-passthrough check in our code is of marginal value. Want me to remove it and keep only nginx.ingress.kubernetes.io/ssl-passthrough (which is the one people actually use)?
+
+----
+No. I want to handle all cases. So.keep them and add the  haproxy.org/ssl-passthrough: "true"
+
+
+-----
+
+- fix haproxy
+- Add cluster name
+- unit tests
+- 

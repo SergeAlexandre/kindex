@@ -136,6 +136,7 @@ func sslPassthrough(ing *networkingv1.Ingress) bool {
 	for _, key := range []string{
 		"nginx.ingress.kubernetes.io/ssl-passthrough",
 		"ingress.kubernetes.io/ssl-passthrough",
+		"haproxy.org/ssl-passthrough",
 	} {
 		if strings.EqualFold(ing.Annotations[key], "true") {
 			return true
