@@ -26,6 +26,8 @@ import (
 	networkingv1 "k8s.io/api/networking/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+
+	"kindex/internal/global"
 )
 
 const linkAnnPrefix = "kindex.kubotal.io/link"
@@ -42,17 +44,19 @@ type IngressLink struct {
 
 // IngressesPageData is passed to the HTML template.
 type IngressesPageData struct {
-	Links []IngressLink
-	Error string
+	ClusterName string
+	Version     string
+	Links       []IngressLink
+	Error       string
 }
 
 // IngressesHandler lists cluster ingresses and renders link entries.
-func IngressesHandler(client kubernetes.Interface) http.Handler {
+func IngressesHandler(client kubernetes.Interface, clusterName string) http.Handler {
 	tpl := template.Must(template.New("ingresses").Parse(ingressesHTML))
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		list, err := client.NetworkingV1().Ingresses(metav1.NamespaceAll).List(ctx, metav1.ListOptions{})
-		data := IngressesPageData{}
+		data := IngressesPageData{ClusterName: clusterName, Version: global.Version}
 		if err != nil {
 			data.Error = err.Error()
 			w.Header().Set("Content-Type", "text/html; charset=utf-8")
@@ -84,7 +88,7 @@ func isLinkAnnotationKey(k string) bool {
 		return true
 	}
 	switch k[len(linkAnnPrefix)] {
-	case '.', '/', '-':
+	case '.', '-':
 		return true
 	default:
 		return false
@@ -171,20 +175,6 @@ func linksForIngress(ing *networkingv1.Ingress) []IngressLink {
 	host := firstIngressHost(ing)
 	ann := linkAnnotations(ing)
 
-	if len(ann) == 1 {
-		var only string
-		for _, v := range ann {
-			only = v
-		}
-		if only == "" {
-			return nil
-		}
-		parts := strings.SplitN(only, ":", 3)
-		if parts[0] == "" {
-			return nil
-		}
-	}
-
 	if len(ann) > 0 {
 		keys := make([]string, 0, len(ann))
 		for k := range ann {
@@ -199,9 +189,6 @@ func linksForIngress(ing *networkingv1.Ingress) []IngressLink {
 			}
 			parts := strings.SplitN(v, ":", 3)
 			display := parts[0]
-			if display == "" {
-				continue
-			}
 			var path, desc string
 			if len(parts) > 1 {
 				path = parts[1]
@@ -211,6 +198,9 @@ func linksForIngress(ing *networkingv1.Ingress) []IngressLink {
 			}
 			if host == "" {
 				continue
+			}
+			if display == "" {
+				display = displayFromHost(host)
 			}
 			out = append(out, IngressLink{
 				Display:     display,

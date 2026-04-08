@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"kindex/internal/global"
 	"kindex/internal/handlers"
 	"kindex/internal/httpsrv"
 	"kindex/internal/misc"
@@ -15,12 +16,14 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 )
 
 var flags struct {
 	logConfig  misc.LogConfig
 	httpConfig httpsrv.Config
 	kubeconfig string
+	mode       string
 }
 
 func init() {
@@ -36,6 +39,8 @@ func init() {
 	ServeCmd.PersistentFlags().StringVar(&flags.httpConfig.KeyName, "keyName", "tls.key", "Certificate Directory")
 	ServeCmd.PersistentFlags().StringVarP(&flags.kubeconfig, "kubeconfig", "k", "", "Kubeconfig file (overrides $KUBECONFIG and ~/.kube/config)")
 	//ServeCmd.PersistentFlags().StringArrayVarP(&flags.oidcHttpConfig.AllowedOrigins, "allowedOrigins", "", []string{}, "Allowed Origins")
+	ServeCmd.PersistentFlags().StringVar(&flags.mode, "mode", "dark", "Display mode (dark, light)")
+
 }
 
 var ServeCmd = &cobra.Command{
@@ -49,13 +54,13 @@ var ServeCmd = &cobra.Command{
 			os.Exit(2)
 		}
 
-		logger.Info("Starting http server", "port", flags.httpConfig.BindPort)
+		logger.Info("Starting kindex server", "port", flags.httpConfig.BindPort, "version", global.Version, "logLevel", flags.logConfig.Level)
 
 		// Kubeconfig resolution (first match wins):
 		// 1) --kubeconfig path
 		// 2) else KUBECONFIG environment variable (standard merge of listed files)
 		// 3) else ~/.kube/config
-		restCfg, err := restConfigFromKubeconfig(flags.kubeconfig)
+		restCfg, clusterName, err := kubeAccessFromFlags(flags.kubeconfig)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "kubeconfig: %v\n", err)
 			os.Exit(2)
@@ -72,7 +77,7 @@ var ServeCmd = &cobra.Command{
 		server := httpsrv.New("ingresses", &flags.httpConfig, router)
 		ctx := logr.NewContextWithSlogLogger(context.Background(), logger)
 
-		router.Handle("GET /", handlers.IngressesHandler(clientSet))
+		router.Handle("GET /", handlers.IngressesHandler(clientSet, clusterName))
 		router.Handle("GET /favicon.ico", handlers.FaviconHandler(path.Join("resources/static", "favicon.ico")))
 
 		err = server.Start(ctx)
@@ -84,13 +89,47 @@ var ServeCmd = &cobra.Command{
 	},
 }
 
-func restConfigFromKubeconfig(explicitPath string) (*rest.Config, error) {
+// kubeAccessFromFlags returns a REST config and a display name for the cluster from the
+// current kubeconfig context (the cluster entry name referenced by that context).
+func kubeAccessFromFlags(explicitPath string) (*rest.Config, string, error) {
 	if explicitPath != "" {
-		return clientcmd.BuildConfigFromFlags("", explicitPath)
+		apiCfg, err := clientcmd.LoadFromFile(explicitPath)
+		if err != nil {
+			return nil, "", err
+		}
+		restCfg, err := clientcmd.BuildConfigFromFlags("", explicitPath)
+		if err != nil {
+			return nil, "", err
+		}
+		return restCfg, kubeClusterDisplayName(apiCfg), nil
 	}
-	// Do not use BuildConfigFromFlags("", ""): after a failed in-cluster attempt it uses
-	// ClientConfigLoadingRules with an empty ExplicitPath and no Precedence, so ~/.kube/config
-	// and KUBECONFIG are never read. Use the standard loading rules instead.
 	rules := clientcmd.NewDefaultClientConfigLoadingRules()
-	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, &clientcmd.ConfigOverrides{}).ClientConfig()
+	clientCfg := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, &clientcmd.ConfigOverrides{})
+	apiCfg, err := clientCfg.RawConfig()
+	if err != nil {
+		return nil, "", err
+	}
+	restCfg, err := clientCfg.ClientConfig()
+	if err != nil {
+		return nil, "", err
+	}
+	return restCfg, kubeClusterDisplayName(&apiCfg), nil
+}
+
+func kubeClusterDisplayName(cfg *clientcmdapi.Config) string {
+	if cfg == nil {
+		return ""
+	}
+	ctxName := cfg.CurrentContext
+	if ctxName == "" {
+		return ""
+	}
+	ctx, ok := cfg.Contexts[ctxName]
+	if !ok {
+		return ctxName
+	}
+	if ctx.Cluster != "" {
+		return ctx.Cluster
+	}
+	return ctxName
 }

@@ -2,17 +2,24 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8">
+	<meta name="kindex-version" content="{{.Version}}">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Ingresses</title>
+	<title>{{if .ClusterName}}{{.ClusterName}} - Ingresses{{else}}Ingresses{{end}}</title>
 	<style>
 		body { font-family: system-ui, sans-serif; margin: 1.5rem; line-height: 1.5; }
+		h1.cluster { font-size: 1.35rem; margin: 0 0 0.25rem 0; font-weight: 600; }
+		h2 { font-size: 1.1rem; margin: 0 0 1rem 0; font-weight: 500; color: #333; }
 		ul { list-style: none; padding: 0; }
 		li { margin: 0.35rem 0; }
 		.err { color: #b00020; }
 	</style>
 </head>
 <body>
+	{{if .ClusterName}}
+	<h1 class="cluster">{{.ClusterName}} - Ingress links</h1>
+	{{else}}
 	<h1>Ingress links</h1>
+	{{end}}
 	{{if .Error}}
 	<p class="err">{{.Error}}</p>
 	{{else if not .Links}}
@@ -21,7 +28,7 @@
 	<ul>
 		{{range .Links}}
 		<li>
-			<a href="{{.Target}}" target="_blank" rel="noopener noreferrer">{{.Display}}</a>
+			<a href="{{.Target}}" rel="noopener noreferrer">{{.Display}}</a>
 			{{if .Description}}<span> — {{.Description}}</span>{{end}}
 		</li>
 		{{end}}

@@ -71,7 +71,25 @@ No. I want to handle all cases. So.keep them and add the  haproxy.org/ssl-passth
 
 -----
 
-- fix haproxy
-- Add cluster name
+Now could you get the cluster name and display in the title and the first line of the page.
+
+
+----
+I change my mind: Don't display the link only if the annotation value is "". if it is like ":pathValue" or "::comment", display it 
+
+-----
+
+The '/' is not allowed by k8s in the annotation key. Remove it from the 3 separators
+
+-----
+Display global.version in the web page.in an hidden way (Only visible by view source)
+
+No.  It does not appears in view page source
+
+-----
+I have added a '--mode' option. Ensure it is either 'dark' or 'light' and adjust page look accordingly 
+
+----
+
 - unit tests
 - 
