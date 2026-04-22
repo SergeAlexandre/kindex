@@ -30,11 +30,9 @@ ingress:
   class: # TBD
   networkPolicy:
     enabled: false
+  passthrough: false
   annotations:
     kindex.kubotal.io/link: ""    # Hide ourselves
-    # nginx.ingress.kubernetes.io/ssl-passthrough: "true"
-    # haproxy.org/ssl-passthrough: "true"
-    # ingress.kubernetes.io/ssl-passthrough: "true"
 
 server:
   tls: false
