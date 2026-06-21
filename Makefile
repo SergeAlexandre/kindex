@@ -1,14 +1,24 @@
 
 
+# Image/chart registry — overridable via dev.env (it is env-specific). The
+# product VERSIONS below are intentionally NOT overridable from dev.env: they
+# are code-bound and git-controlled (see the ':=' after the include).
+REGISTRY ?= quay.io/kubotal
+
+# Per-developer overrides (git-ignored, optional).
+# The leading '-' makes a missing file a silent no-op, so this never breaks.
+# If you use the registry set with 'make dev-up', the same values are sourced
+# by the hack/ scripts; see dev.env.example.
+-include dev.env
+
+
 APP_VERSION ?= 0.1.0-snapshot
 HELM_VERSION ?= 0.1.0-snapshot
 
 DOCKER_TAG=${APP_VERSION}
 
-IMG ?= quay.io/kubosa/exec/kindex:${DOCKER_TAG}
-HELM_DOCKER_REPO := quay.io/kubosa/charts
-
-
+IMG ?= $(REGISTRY)/exec/kindex:${DOCKER_TAG}
+HELM_DOCKER_REPO := $(REGISTRY)/charts
 
 
 BUILD_TS ?= $(shell date -u +%Y%m%d.%H%M%S)

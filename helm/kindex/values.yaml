@@ -18,7 +18,7 @@ log:
 image:
   pullSecrets: []
   pullPolicy: IfNotPresent
-  repository: quay.io/kubosa/exec/kindex
+  repository: quay.io/kubotal/exec/kindex
   # -- Overrides the image tag whose default is the chart appVersion.
   tag:
 
