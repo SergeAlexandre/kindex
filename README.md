@@ -18,7 +18,46 @@ The application version is exposed in the HTML as a `<meta name="kindex-version"
 - A Kubernetes cluster you can reach with a valid kubeconfig, **or** in-cluster credentials when running as a Pod.
 - To list Ingresses everywhere, the identity you use needs **`get` / `list` / `watch`** on **`ingresses`** in API group **`networking.k8s.io`** at cluster scope (the Helm chart installs a `ClusterRole` for that).
 
-## Install and run (binary)
+
+## Install and run: Helm
+
+A chart lives under **`helm/kindex/`**.
+
+Typical install (adjust host, ingress class, and optional display name):
+
+```bash
+helm upgrade --install kindex ./helm/kindex \
+  --namespace kindex --create-namespace \
+  --set ingress.host=index.example.com \
+  --set ingress.class=nginx \
+  --set server.clusterName=my-cluster
+```
+
+Important values:
+
+- **`ingress.host`** and **`ingress.class`** — required when `ingress.enabled` is true (the template validates this).
+- **`rbac.create`** / **`serviceAccount.create`** — default **true**; grants cluster-wide read-only access to Ingresses and wires the Pod service account.
+- **`server.mode`** — `dark` or `light`.
+- **`server.tls`** — when true, mounts a certificate secret and enables server TLS (configure issuer / certificate resources as needed).
+
+See **`helm/kindex/values.yaml`** for images, resources, node selectors, tolerations, and name overrides.
+
+
+## Custom links with annotations
+
+Annotation keys must be exactly **`kindex.kubotal.io/link`** or start with that prefix followed by **`.`** or **`-`** (for example `kindex.kubotal.io/link.docs`). **`/`** is not allowed in annotation keys.
+
+The value has up to three segments separated by **`:`** (split with at most two separators):
+
+1. **Display text** — if empty, the same short hostname label as the default case is used.
+2. **Path** — appended to the host (leading `/` added if missing).
+3. **Description** — short text after the link.
+
+Skip an annotation entirely by setting its value to **`""`**; that key does not produce a row.
+
+Multiple matching annotations on one Ingress produce multiple rows.
+
+## Local install and run (binary)
 
 Build from source (Go toolchain required):
 
@@ -68,43 +107,6 @@ Run `kindex serve --help` for the full list.
 kindex version
 kindex version --extended   # includes build timestamp
 ```
-
-## Custom links with annotations
-
-Annotation keys must be exactly **`kindex.kubotal.io/link`** or start with that prefix followed by **`.`** or **`-`** (for example `kindex.kubotal.io/link.docs`). **`/`** is not allowed in annotation keys.
-
-The value has up to three segments separated by **`:`** (split with at most two separators):
-
-1. **Display text** — if empty, the same short hostname label as the default case is used.  
-2. **Path** — appended to the host (leading `/` added if missing).  
-3. **Description** — short text after the link.
-
-Skip an annotation entirely by setting its value to **`""`**; that key does not produce a row.
-
-Multiple matching annotations on one Ingress produce multiple rows.
-
-## Helm
-
-A chart lives under **`helm/kindex/`**.
-
-Typical install (adjust host, ingress class, and optional display name):
-
-```bash
-helm upgrade --install kindex ./helm/kindex \
-  --namespace kindex --create-namespace \
-  --set ingress.host=index.example.com \
-  --set ingress.class=nginx \
-  --set server.clusterName=my-cluster
-```
-
-Important values:
-
-- **`ingress.host`** and **`ingress.class`** — required when `ingress.enabled` is true (the template validates this).
-- **`rbac.create`** / **`serviceAccount.create`** — default **true**; grants cluster-wide read-only access to Ingresses and wires the Pod service account.
-- **`server.mode`** — `dark` or `light`.
-- **`server.tls`** — when true, mounts a certificate secret and enables server TLS (configure issuer / certificate resources as needed).
-
-See **`helm/kindex/values.yaml`** for images, resources, node selectors, tolerations, and name overrides.
 
 ## Container image
 
