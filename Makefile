@@ -1,9 +1,10 @@
 
 
-# Image/chart registry — overridable via dev.env (it is env-specific). The
-# product VERSIONS below are intentionally NOT overridable from dev.env: they
-# are code-bound and git-controlled (see the ':=' after the include).
-REGISTRY ?= quay.io/kubotal
+# Image and chart registry — Must be set via dev.env or from environment.
+# Intentionally empty in this makefile, as we want user to set REGISTRY
+# explicitly. Targets that need it depend on `check-registry`, which fails with
+# a clear message when it is unset (e.g. quay.io/kubotal).
+REGISTRY ?=
 
 # Per-developer overrides (git-ignored, optional).
 # The leading '-' makes a missing file a silent no-op, so this never breaks.
@@ -11,11 +12,13 @@ REGISTRY ?= quay.io/kubotal
 # by the hack/ scripts; see dev.env.example.
 -include dev.env
 
+# The product VERSIONS below are intentionally NOT overridable from dev.env or from environment.
+# They are code-bound and git-controlled (see the ':=' assignment type).
 
-APP_VERSION ?= 0.1.0-snapshot
-HELM_VERSION ?= 0.1.0-snapshot
+APP_VERSION := 0.1.0-snapshot
+HELM_VERSION := 0.1.0-snapshot
 
-IMG_REPO ?= $(REGISTRY)/exec/kindex
+IMG_REPO := $(REGISTRY)/exec/kindex
 
 HELM_DOCKER_REPO := $(REGISTRY)/charts
 
@@ -47,6 +50,15 @@ help: ## Display this help.
 
 ##@ Build
 
+.PHONY: check-registry
+check-registry: ## Fail with a clear message if REGISTRY is not set
+	@if [ -z "$(strip $(REGISTRY))" ]; then \
+		echo "ERROR: REGISTRY is not set."; \
+		echo "Set it in dev.env, export it in your environment, or pass it on the command line, e.g.:"; \
+		echo "    make $(or $(MAKECMDGOALS),<target>) REGISTRY=quay.io/my-organization"; \
+		exit 1; \
+	fi
+
 .PHONY: display
 display:  ## Display current config values
 	@echo "---------"
@@ -66,11 +78,11 @@ build: display ## Build binary.
 docker: display docker-build docker-push  ## Build controller docker image and push
 
 .PHONY: docker-build
-docker-build: ## Build docker image
+docker-build: check-registry ## Build docker image
 	$(CONTAINER_TOOL) build --build-arg VERSION=$(APP_VERSION) --build-arg BUILD_TS=$(BUILD_TS) -t $(IMG_REPO):$(APP_VERSION) .
 
 .PHONY: docker-push
-docker-push: ## Push docker image
+docker-push: check-registry ## Push docker image
 	$(CONTAINER_TOOL) push $(IMG_REPO):$(APP_VERSION)
 
 # PLATFORMS defines the target platforms for the manager image be built to provide support to multiple
@@ -80,7 +92,7 @@ docker-push: ## Push docker image
 # - be able to push the image to your registry
 PLATFORMS ?= linux/arm64,linux/amd64
 .PHONY: docker-buildx
-docker-buildx: display  ## Build and push docker image with cross-platform support
+docker-buildx: check-registry display  ## Build and push docker image with cross-platform support
 	- $(CONTAINER_TOOL) buildx create --name kindex-builder --driver=docker-container
 	- $(CONTAINER_TOOL) buildx build --builder kindex-builder --push --platform=$(PLATFORMS) --build-arg VERSION=$(APP_VERSION) --build-arg BUILD_TS=$(BUILD_TS) --tag $(IMG_REPO):$(APP_VERSION) -f Dockerfile .
 	- $(CONTAINER_TOOL) buildx rm kindex-builder
@@ -101,7 +113,7 @@ endef
 export CHART_YAML
 
 .PHONY: chart-yaml
-chart-yaml: ## Generate the helm/kindex/Chart.yaml
+chart-yaml: check-registry ## Generate the helm/kindex/Chart.yaml
 	echo "$$CHART_YAML" >./helm/kindex/Chart.yaml
 
 .PHONY: chart

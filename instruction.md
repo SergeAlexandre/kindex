@@ -121,3 +121,7 @@ How to automatically configure this value, based on the REGISTRY env variable ?
 Just propose and explain a solution. Don't implement it for now
 
 
+----
+Implements a github action which perform a 'make docker-buildx' on each push on this branch.
+I want to use the project Makefile, so the runer must be able to launch make, go, docker , etc...
+
