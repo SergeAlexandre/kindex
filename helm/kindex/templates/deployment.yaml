@@ -59,7 +59,7 @@ spec:
           - --certName={{ .Values.server.certName }}
           - --keyName={{ .Values.server.keyName }}
           {{- end }}
-        image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        image: "{{ .Values.image.repository | default .Chart.Annotations.kubotal_image_repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         {{ with .Values.containerSecurityContext }}
         securityContext:

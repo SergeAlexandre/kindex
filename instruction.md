@@ -111,3 +111,17 @@ kind: TLSRoute
 
 ---
 I still need support of old GatewayAPI version. So rollback your modif and ADD support for latest version (ADD, Not replace)
+
+
+----
+
+Target registry for 'make docker' and 'make chart' are now configurable using the dev.env file.
+Problem is the 'image.repository:' property in the value file does not follow up.
+How to automatically configure this value, based on the REGISTRY env variable ?
+Just propose and explain a solution. Don't implement it for now
+
+
+----
+Implements a github action which perform a 'make docker-buildx' on each push on this branch.
+I want to use the project Makefile, so the runer must be able to launch make, go, docker , etc...
+
