@@ -57,8 +57,9 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
+      - name: make chart
+        run: make chart REGISTRY="${REGISTRY}"
+
       - name: make docker-buildx
         run: make docker-buildx REGISTRY="${REGISTRY}"
 
-      - name: make chart
-        run: make chart REGISTRY="${REGISTRY}"
