@@ -7,6 +7,8 @@ on:
   push:
     branches:
       - build/registry-conf
+  # Allow manual runs from the Actions tab / `gh workflow run`.
+  workflow_dispatch:
 
 # Image/chart registry. Overridable repo-wide via the `REGISTRY` variable
 # (Settings > Secrets and variables > Actions > Variables);

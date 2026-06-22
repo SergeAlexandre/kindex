@@ -3,7 +3,7 @@
 # Image and chart registry — Must be set via dev.env or from environment.
 # Intentionally empty in this makefile, as we want user to set REGISTRY
 # explicitly. Targets that need it depend on `check-registry`, which fails with
-# a clear message when it is unset (e.g. quay.io/kubotal).
+# a clear message when it is unset.
 REGISTRY ?=
 
 # Per-developer overrides (git-ignored, optional).
