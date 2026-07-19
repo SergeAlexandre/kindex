@@ -167,13 +167,13 @@ func linksForHTTPRoute(route *gatewayv1.HTTPRoute, gateways map[string]*gatewayv
 	ann := linkAnnotationValues(route.Annotations)
 	scheme := schemeHTTPRouteString(route, gateways)
 	if len(ann) > 0 {
-		return linksFromAnnotationMap(host, ann, scheme)
+		return linksFromAnnotationMap(host, route.Namespace, ann, scheme)
 	}
 	if host == "" {
 		return nil
 	}
 	return []IngressLink{{
-		Display: displayFromHost(host),
+		Display: displayFromHost(host, route.Namespace),
 		Target:  buildURLFromScheme(scheme, host, ""),
 	}}
 }
@@ -183,13 +183,13 @@ func linksForTLSRouteV1(route *gatewayv1.TLSRoute) []IngressLink {
 	ann := linkAnnotationValues(route.Annotations)
 	scheme := schemeTLSRouteString()
 	if len(ann) > 0 {
-		return linksFromAnnotationMap(host, ann, scheme)
+		return linksFromAnnotationMap(host, route.Namespace, ann, scheme)
 	}
 	if host == "" {
 		return nil
 	}
 	return []IngressLink{{
-		Display: displayFromHost(host),
+		Display: displayFromHost(host, route.Namespace),
 		Target:  buildURLFromScheme(scheme, host, ""),
 	}}
 }
@@ -211,18 +211,18 @@ func linksForTLSRouteAlpha2(route *gatewayv1alpha2.TLSRoute) []IngressLink {
 	ann := linkAnnotationValues(route.Annotations)
 	scheme := schemeTLSRouteString()
 	if len(ann) > 0 {
-		return linksFromAnnotationMap(host, ann, scheme)
+		return linksFromAnnotationMap(host, route.Namespace, ann, scheme)
 	}
 	if host == "" {
 		return nil
 	}
 	return []IngressLink{{
-		Display: displayFromHost(host),
+		Display: displayFromHost(host, route.Namespace),
 		Target:  buildURLFromScheme(scheme, host, ""),
 	}}
 }
 
-func linksFromAnnotationMap(host string, ann map[string]string, scheme string) []IngressLink {
+func linksFromAnnotationMap(host string, namespace string, ann map[string]string, scheme string) []IngressLink {
 	keys := make([]string, 0, len(ann))
 	for k := range ann {
 		keys = append(keys, k)
@@ -247,7 +247,7 @@ func linksFromAnnotationMap(host string, ann map[string]string, scheme string) [
 			continue
 		}
 		if display == "" {
-			display = displayFromHost(host)
+			display = displayFromHost(host, namespace)
 		}
 		out = append(out, IngressLink{
 			Display:     display,
