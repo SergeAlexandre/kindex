@@ -18,6 +18,7 @@ package handlers
 
 import (
 	_ "embed"
+	"fmt"
 	"html/template"
 	"net/http"
 	"sort"
@@ -208,12 +209,12 @@ func firstIngressHost(ing *networkingv1.Ingress) string {
 	return ""
 }
 
-func displayFromHost(host string) string {
+func displayFromHost(host string, namespace string) string {
 	i := strings.IndexByte(host, '.')
 	if i <= 0 {
-		return host
+		return fmt.Sprintf("%s (%s)", host, namespace)
 	}
-	return host[:i]
+	return fmt.Sprintf("%s (%s)", host[:i], namespace)
 }
 
 func hostInTLSSpec(ing *networkingv1.Ingress, host string) bool {
@@ -269,7 +270,7 @@ func linksForIngress(ing *networkingv1.Ingress) []IngressLink {
 	ann := linkAnnotationValues(ing.Annotations)
 
 	if len(ann) > 0 {
-		return linksFromAnnotationMap(host, ann, schemeForHost(ing, host))
+		return linksFromAnnotationMap(host, ing.Namespace, ann, schemeForHost(ing, host))
 	}
 
 	if host == "" {
@@ -277,7 +278,7 @@ func linksForIngress(ing *networkingv1.Ingress) []IngressLink {
 	}
 	scheme := schemeForHost(ing, host)
 	return []IngressLink{{
-		Display: displayFromHost(host),
+		Display: displayFromHost(host, ing.Namespace),
 		Target:  buildURLFromScheme(scheme, host, ""),
 	}}
 }
